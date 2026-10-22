@@ -1,834 +1,920 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Core Investo</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-/* Layout: slim top bar with upload, left rail of sections on desktop that becomes a scrolling tab strip on phones, one calm content column of white panels on a cool light ground. */
-:root{
-  --bg:#FAF6F1;
-  --surface:#FFFDFA;
-  --ink:#3B1F27;
-  --muted:#7A6269;
-  --line:#EBDFD8;
-  --accent:#8C3B4A;
-  --accent-soft:#F6E6E8;
-  --tint:#F8F0EB;
-  --tint2:#F1E4DF;
-  --good:#1E8A58; --good-soft:#E3F4EB;
-  --warn:#B97A06; --warn-soft:#FBF0D9;
-  --bad:#BF3F38;  --bad-soft:#FBE7E5;
-  --font-body:"DIN Next","DIN Pro","DIN 1451 Std","D-DIN",Barlow,"Helvetica Neue",Arial,sans-serif;
-  --font-display:"DIN Next","DIN Pro","D-DIN","Barlow Condensed",Barlow,"Arial Narrow",Arial,sans-serif;
-  color-scheme:light;
-}
-*{box-sizing:border-box}
-html,body{height:auto}
-body{
-  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
-  padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-}
-a{color:var(--accent)}
-button{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:1180px;margin:0 auto}
-.top{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-block:18px 14px}
-.brand{display:flex;align-items:baseline;gap:10px}
-.brand h1{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:.02em;margin:0;text-transform:uppercase}
-.brand h1 span{color:var(--accent)}
-.brand small{color:var(--muted);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
-.drop{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1.5px dashed #D6B8BD;border-radius:10px;padding:10px 14px;min-width:0;max-width:100%}
-.drop.over{border-color:var(--accent);background:var(--accent-soft)}
-.drop p{margin:0;color:var(--muted);font-size:14px;min-width:0}
-.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;letter-spacing:.02em;cursor:pointer}
-.btn:hover{filter:brightness(1.08)}
-.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
-.btn[disabled]{opacity:.55;cursor:default}
-.main{display:flex;flex-direction:column;gap:16px;padding-bottom:40px}
-.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;flex-direction:row;gap:4px;overflow-x:auto;background:var(--bg);border-bottom:1px solid var(--line);padding-top:4px}
-.rail button{white-space:nowrap;text-align:center;background:transparent;border:0;border-radius:8px 8px 0 0;padding:11px 16px;cursor:pointer;color:var(--muted);font-weight:500;font-size:15px;letter-spacing:.02em;border-bottom:3px solid transparent;margin-bottom:-1px}
-.rail button:hover{background:var(--tint2);color:var(--ink)}
-.rail button[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600;border-bottom-color:var(--accent)}
-.view{display:flex;flex-direction:column;gap:18px;min-width:0}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;min-width:0}
-.panel h2{font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:.02em;margin:0 0 4px;text-transform:uppercase}
-.panel h3{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
-.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
-.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.pill.good{background:var(--good-soft);color:var(--good)}
-.pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.bad{background:var(--bad-soft);color:var(--bad)}
-.pill.info{background:var(--accent-soft);color:var(--accent)}
-.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:14px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.kpi{background:var(--surface);padding:14px 16px;min-width:0}
-.kpi .l{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.kpi .v{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
-.kpi .d{font-size:13px;color:var(--muted)}
-.up{color:var(--good)} .down{color:var(--bad)}
-.tablewrap{overflow-x:auto;max-width:100%}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left;white-space:normal;min-width:180px}
-th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--tint)}
-tr.tot td{font-weight:600;background:var(--tint)}
-td .tag{font-size:11px;color:var(--muted);margin-left:6px;letter-spacing:.04em;text-transform:uppercase}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
-.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
-.list li{display:flex;gap:10px;align-items:flex-start}
-.list .dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:8px;background:var(--accent)}
-.list .dot.good{background:var(--good)} .list .dot.warn{background:var(--warn)} .list .dot.bad{background:var(--bad)}
-.gauge{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
-.score{font-family:var(--font-display);font-size:64px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.bar{height:8px;background:var(--tint2);border-radius:99px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:99px}
-.comp{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) 42px;gap:12px;align-items:center;padding:7px 0}
-.comp b{font-weight:500}
-.comp span.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
-.signal{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.signal .word{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.links a{display:block;border:1px solid var(--line);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);background:var(--tint)}
-.links a:hover{border-color:var(--accent);background:var(--accent-soft)}
-.links a b{display:block;font-weight:600}
-.links a span{color:var(--muted);font-size:13px}
-.wl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.wl input{flex:1 1 180px;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:inherit;background:#fff;color:var(--ink)}
-.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;background:var(--tint);font-weight:600}
-.chip a{font-weight:500;font-size:13px}
-.chip button{border:0;background:var(--tint2);border-radius:50%;width:22px;height:22px;cursor:pointer;line-height:1;color:var(--muted)}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.note{font-size:13px;color:var(--muted)}
-.msg{font-size:14px;min-height:1.4em}
-.msg.err{color:var(--bad)}
-svg text{font-family:var(--font-body)}
-.chart{width:100%;height:auto;display:block}
-.chart .ax{fill:var(--muted);font-size:11px}
-.chart .gl{stroke:var(--line);stroke-width:1}
-.legend{display:flex;gap:16px;font-size:13px;color:var(--muted);margin-top:6px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
-.foot{padding-block:8px 28px;color:var(--muted);font-size:13px;max-width:860px}
-@media (max-width:820px){
-  .rail button{padding:10px 12px}
-  .panel{padding:16px}
-  .comp{grid-template-columns:110px minmax(0,1fr) 36px}
-  .score{font-size:54px}
-}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@media (prefers-reduced-motion:no-preference){
-  .view>*{animation:rise .5s ease both}
-  .view>*:nth-child(2){animation-delay:.07s}
-  .view>*:nth-child(3){animation-delay:.14s}
-  .view>*:nth-child(4){animation-delay:.21s}
-  .view>*:nth-child(5){animation-delay:.28s}
-  .bar i{transform-origin:left;animation:grow .9s ease .15s both}
-  .panel{transition:box-shadow .3s ease,border-color .3s ease}
-  .panel:hover{box-shadow:0 8px 24px rgba(140,59,74,.09);border-color:#E2CBCF}
-  .btn{transition:filter .2s ease,transform .2s ease}
-  .btn:hover{transform:translateY(-1px)}
-  .rail button{transition:background .25s ease,color .25s ease}
-  .links a{transition:background .25s ease,border-color .25s ease,transform .25s ease}
-  .links a:hover{transform:translateY(-2px)}
-  .kpi{transition:background .25s ease}
-  .kpi:hover{background:var(--tint)}
-  .drop{transition:background .25s ease,border-color .25s ease}
-  .brand h1 span{display:inline-block;animation:rise .7s ease both}
-}
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Investo - Enterprise Financial Intelligence & Portfolio Analytics</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                            bg: '#0b0f19',
+                            card: '#111827',
+                            border: '#1f2937'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- SheetJS (XLSX) Libraries with fallback mechanism built into application logic -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col custom-scrollbar">
 
-<div class="wrap">
-  <header class="top">
-    <div class="brand"><h1>Core <span>Investo</span></h1><small>Financial intelligence</small></div>
-    <div class="drop" id="drop">
-      <p id="dropText">Drop an Excel, CSV or PDF of financial statements here</p>
-      <input type="file" id="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
-      <button class="btn" id="pick" type="button">Upload file</button>
-      <button class="btn ghost" id="demo" type="button">Use sample data</button>
+    <!-- Top Navigation Header -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-gray-800 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid font-bold text-lg fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl font-bold tracking-tight text-white">CORE INVESTO</span>
+                        <span class="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full border border-indigo-500/30 font-semibold">PRO V3.2</span>
+                    </div>
+                    <p class="text-xs text-gray-400">Enterprise Financial Intelligence & Portfolio Analytics</p>
+                </div>
+            </div>
+
+            <!-- Controls Header Right -->
+            <div class="flex items-center gap-3">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/25">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Upload Statements</span>
+                </button>
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .xlsb, .csv, .txt" class="hidden" onchange="handleFileUpload(event)">
+
+                <button onclick="loadSampleData()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Load Sample</span>
+                </button>
+
+                <button onclick="toggleDiagnosticsModal()" title="View File Diagnostics" class="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 p-2.5 rounded-lg text-sm transition">
+                    <i class="fa-solid fa-code"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+
+        <!-- Notification / Error Banner -->
+        <div id="statusBanner" class="hidden p-4 rounded-xl border flex items-start gap-3 transition-all duration-300">
+            <div id="statusIcon" class="text-lg mt-0.5"></div>
+            <div class="flex-1">
+                <h4 id="statusTitle" class="font-semibold text-sm">Notification</h4>
+                <p id="statusMessage" class="text-xs mt-0.5 opacity-90"></p>
+            </div>
+            <button onclick="hideStatusBanner()" class="text-gray-400 hover:text-white text-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Toolbar & Slicers -->
+        <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="text-xs uppercase tracking-wider text-gray-400 font-bold">Financial Period:</label>
+                <div id="periodSlicer" class="flex flex-wrap items-center gap-1.5 bg-gray-900/80 p-1 rounded-xl border border-gray-800">
+                    <!-- Dynamic Period Buttons generated by JS -->
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-400">Sheet:</span>
+                <select id="sheetSelector" onchange="switchSheet(this.value)" class="bg-gray-900 border border-gray-700 text-xs text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500">
+                    <option value="">No Sheets Loaded</option>
+                </select>
+                <span id="activeFileTag" class="text-xs bg-indigo-900/40 text-indigo-300 border border-indigo-800/50 px-2.5 py-1 rounded-md hidden">
+                    Sample Data
+                </span>
+            </div>
+        </div>
+
+        <!-- Key Financial KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Revenue -->
+            <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-indigo-500 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>Total Revenue</span>
+                    <i class="fa-solid fa-dollar-sign text-indigo-400"></i>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiRevenue" class="text-2xl font-bold text-white">$0.00</div>
+                    <div id="kpiRevenueGrowth" class="text-xs mt-1 flex items-center gap-1 font-medium text-gray-400">
+                        <span>-- YoY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gross Margin -->
+            <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>Gross Profit / Margin</span>
+                    <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiGrossProfit" class="text-2xl font-bold text-white">$0.00</div>
+                    <div id="kpiGrossMargin" class="text-xs mt-1 font-medium text-emerald-400">
+                        Margin: 0.0%
+                    </div>
+                </div>
+            </div>
+
+            <!-- EBITDA / Operating Income -->
+            <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>EBITDA / Operating Income</span>
+                    <i class="fa-solid fa-arrows-split-up-and-left text-amber-400"></i>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiEBITDA" class="text-2xl font-bold text-white">$0.00</div>
+                    <div id="kpiEbitdaMargin" class="text-xs mt-1 font-medium text-amber-400">
+                        EBITDA Margin: 0.0%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Net Profit / PAT -->
+            <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-purple-500 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>Net Profit (PAT)</span>
+                    <i class="fa-solid fa-wallet text-purple-400"></i>
+                </div>
+                <div class="mt-3">
+                    <div id="kpiNetProfit" class="text-2xl font-bold text-white">$0.00</div>
+                    <div id="kpiNetMargin" class="text-xs mt-1 font-medium text-purple-400">
+                        Net Margin: 0.0%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Visualizations Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Revenue & Profitability Trends -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-indigo-400"></i>
+                        Revenue & Profit Performance Trend
+                    </h3>
+                    <span class="text-xs text-gray-400">Multi-Year Trajectory</span>
+                </div>
+                <div class="flex-1 h-64 relative flex items-center justify-center border border-gray-800/80 rounded-xl bg-gray-950/40 p-2" id="chartTrendContainer">
+                    <!-- SVG Chart Rendered Dynamically -->
+                </div>
+            </div>
+
+            <!-- Profit Margins Breakdown -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-percent text-emerald-400"></i>
+                        Margin Profiles (%) Comparison
+                    </h3>
+                    <span class="text-xs text-gray-400">Efficiency Ratios</span>
+                </div>
+                <div class="flex-1 h-64 relative flex items-center justify-center border border-gray-800/80 rounded-xl bg-gray-950/40 p-2" id="chartMarginContainer">
+                    <!-- SVG Margin Line Chart Rendered Dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Canonical Financial Statement Table -->
+        <div class="glass-panel rounded-2xl overflow-hidden border border-gray-800">
+            <div class="p-4 border-b border-gray-800 flex flex-wrap items-center justify-between gap-2 bg-gray-900/60">
+                <div>
+                    <h3 class="text-base font-semibold text-white">Parsed Income Statement & Financial Statements</h3>
+                    <p class="text-xs text-gray-400">Standardized Canonical Mapping across selected financial years</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-lg">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Auto-Mapped Line Items
+                    </span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="bg-gray-900/90 text-xs uppercase font-semibold text-gray-400 border-b border-gray-800">
+                        <tr id="tableHeaderRow">
+                            <th class="py-3.5 px-4 min-w-[220px]">Line Item</th>
+                            <!-- Years headers dynamically inserted -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-800/60 font-mono text-xs">
+                        <tr>
+                            <td colspan="6" class="py-12 text-center text-gray-500 font-sans">
+                                Upload a financial workbook (.xlsx, .xls, .csv) or click "Load Sample" to view analytics.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Diagnostics / File Debugger Modal -->
+    <div id="diagnosticsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-2xl w-full rounded-2xl overflow-hidden border border-gray-700 flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/80">
+                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                    <i class="fa-solid fa-bug text-indigo-400"></i> Parser Diagnostics & Inspection
+                </h3>
+                <button onclick="toggleDiagnosticsModal()" class="text-gray-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-xs font-mono">
+                <div>
+                    <span class="text-gray-400 font-sans">SheetJS Library Status:</span>
+                    <span id="diagSheetJSStatus" class="ml-2 font-bold text-emerald-400">Checking...</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-sans">Active File Name:</span>
+                    <span id="diagFileName" class="ml-2 text-indigo-300">None</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-sans">Detected Header Row Index:</span>
+                    <span id="diagHeaderIndex" class="ml-2 text-amber-300">N/A</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-sans">Extracted Financial Years:</span>
+                    <span id="diagYears" class="ml-2 text-emerald-300">None</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-sans">Raw Parse Log:</span>
+                    <pre id="diagLog" class="mt-2 p-3 bg-gray-950 rounded-xl border border-gray-800 text-gray-300 overflow-x-auto max-h-48 whitespace-pre-wrap"></pre>
+                </div>
+            </div>
+            <div class="p-3 border-t border-gray-800 bg-gray-900/50 flex justify-end">
+                <button onclick="toggleDiagnosticsModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs rounded-lg font-sans">
+                    Close
+                </button>
+            </div>
+        </div>
     </div>
-  </header>
-  <div class="msg" id="msg" role="status"></div>
-  <div class="main">
-    <nav class="rail" id="rail" aria-label="Sections"></nav>
-    <main class="view" id="view"></main>
-  </div>
-  <p class="foot">Core Investo reads the figures in the file you upload and applies rule-based checks. Output is for information only and is not investment advice. Check every figure against the source before you act on it.</p>
-</div>
 
-<script>
-(function(){
-"use strict";
-var $=function(s){return document.querySelector(s)};
-var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})};
+    <!-- Application Script Engine -->
+    <script>
+        // State Store
+        const state = {
+            workbook: null,
+            activeSheetName: null,
+            rawMatrix: [],
+            extractedYears: [],
+            selectedPeriod: 'All',
+            canonicalData: {},
+            fileName: 'No file loaded',
+            diagnosticsLog: []
+        };
 
-/* ---------- canonical line items ---------- */
-var CANON=[
- ["cogs",/cost of (goods|sales|revenue|materials|products)|\bcogs\b|materials consumed/],
- ["grossprofit",/gross (profit|margin)/],
- ["ebitda",/\bebitda\b/],
- ["dep",/depreciation|amorti[sz]ation/],
- ["interest",/(interest|finance) (expense|cost|charge)|finance costs|interest paid/],
- ["pbt",/(profit|income|earnings) before (income )?tax|\bpbt\b/],
- ["netincome",/net (profit|income|earnings)|profit after tax|\bpat\b|profit for the (year|period)|profit attributable/],
- ["tax",/(income )?tax expense|provision for (income )?tax|^(current )?tax$/],
- ["ebit",/\bebit\b|operating (profit|income)|profit from operations/],
- ["opex",/^(total )?(operating|other|selling|administrative) expenses|sg&a|selling.*administrative/],
- ["revenue",/revenue|net sales|turnover|^sales$|total income/],
- ["ocf",/(operating activities)|cash (flow )?(from|generated from|provided by) operat/],
- ["icf",/investing activities/],
- ["cff",/financing activities/],
- ["capex",/capital expenditure|capex|purchase of (property|fixed assets|plant|equipment)|additions to (property|fixed)/],
- ["totalAssets",/^total assets$/],
- ["currentAssets",/total current assets|^current assets$/],
- ["cash",/cash and (cash )?equivalents|cash & bank|cash and bank|^cash$/],
- ["receivables",/receivable|debtors/],
- ["inventory",/inventor/],
- ["currentLiab",/total current liabilities|^current liabilities$/],
- ["totalLiab",/^total liabilities$/],
- ["debt",/borrowings|total debt|^debt$|^loans?$|long[- ]term debt|term loans?/],
- ["equity",/total (shareholders'?|stockholders'?|owners'?)?\s*(equity|funds)(?!\s*(and|&))|net worth|shareholders'? (equity|funds)(?!\s*(and|&))|^total equity$/]
-];
-var STMT={
- is:[["revenue","Revenue"],["cogs","Cost of goods sold"],["grossprofit","Gross profit",1],["opex","Operating expenses"],["ebitda","EBITDA",1],["dep","Depreciation and amortisation"],["ebit","Operating profit (EBIT)",1],["interest","Interest expense"],["pbt","Profit before tax",1],["tax","Tax"],["netincome","Net profit",1]],
- bs:[["cash","Cash and equivalents"],["receivables","Receivables"],["inventory","Inventory"],["currentAssets","Current assets",1],["totalAssets","Total assets",1],["currentLiab","Current liabilities"],["debt","Borrowings"],["totalLiab","Total liabilities",1],["equity","Shareholders' equity",1]],
- cf:[["ocf","Operating cash flow",1],["icf","Investing cash flow"],["cff","Financing cash flow"],["capex","Capital expenditure"],["fcf","Free cash flow",1]]
-};
-var LABELS={};["is","bs","cf"].forEach(function(g){STMT[g].forEach(function(r){LABELS[r[0]]=r[1]})});
+        // Canonical Line Item Rules & Fuzzy Synonyms
+        const CANONICAL_KEYS = [
+            { id: 'revenue', label: 'Revenue / Sales', aliases: ['sales', 'revenue', 'turnover', 'gross sales', 'net sales', 'total income', 'total operating income', 'income from operations'] },
+            { id: 'cogs', label: 'Cost of Goods Sold (COGS)', aliases: ['cogs', 'cost of sales', 'material cost', 'direct expense', 'cost of goods', 'cost of materials consumed'] },
+            { id: 'gross_profit', label: 'Gross Profit', aliases: ['gross profit', 'gross margin', 'gp'] },
+            { id: 'opex', label: 'Operating Expenses (OpEx)', aliases: ['operating expense', 'opex', 'sg&a', 'admin expenses', 'selling expenses', 'other expenses', 'operating expenses'] },
+            { id: 'ebitda', label: 'EBITDA / Operating Profit', aliases: ['ebitda', 'operating profit', 'ebit', 'operating income', 'pbit'] },
+            { id: 'depreciation', label: 'Depreciation & Amortization', aliases: ['depreciation', 'd&a', 'amortisation', 'depn'] },
+            { id: 'pbt', label: 'Profit Before Tax (PBT)', aliases: ['pbt', 'profit before tax', 'ebt', 'income before tax'] },
+            { id: 'tax', label: 'Tax Expenses', aliases: ['tax', 'taxes', 'taxation', 'current tax', 'income tax'] },
+            { id: 'pat', label: 'Net Profit (PAT)', aliases: ['pat', 'net profit', 'profit after tax', 'net income', 'profit for the year'] },
+            { id: 'cash', label: 'Cash & Cash Equivalents', aliases: ['cash', 'cash & cash equivalents', 'bank balances', 'liquid funds'] },
+            { id: 'debt', label: 'Total Borrowings / Debt', aliases: ['debt', 'total debt', 'borrowings', 'long term debt', 'short term debt', 'loans'] },
+            { id: 'equity', label: 'Total Equity / Net Worth', aliases: ['equity', 'net worth', 'shareholder equity', 'share capital', 'total equity'] }
+        ];
 
-/* ---------- number + file parsing ---------- */
-function parseNum(v){
-  if(typeof v==="number")return isFinite(v)?v:NaN;
-  if(v==null)return NaN;
-  var s=String(v).trim();
-  if(!s||!/\d/.test(s))return NaN;
-  if(!/^[\(\-–−]?\s*[$€£₹]?\s*[\d,]+(\.\d+)?\s*\)?\s*(cr|mn|m|bn|k)?\.?$/i.test(s))return NaN;
-  var neg=/^\(.*\)$/.test(s)||/^[\-–−]/.test(s);
-  var n=parseFloat(s.replace(/[^0-9.]/g,""));
-  return isNaN(n)?NaN:(neg?-n:n);
-}
-function isYearRow(nums){return nums.length>=2&&nums.every(function(n){return n>=1990&&n<=2100&&n%1===0})}
-function fromRows(rows){
-  var periods=null,best=0;
-  rows.slice(0,25).forEach(function(r){
-    var cells=r.map(function(c){return c==null?"":String(c).trim()});
-    var m=cells.filter(function(c){return c.length<24&&/((19|20)\d\d|FY\s?\d{2}|\bQ[1-4]\b)/i.test(c)});
-    if(m.length>=2&&m.length>best){best=m.length;periods=m}
-  });
-  var data=[];
-  rows.forEach(function(r){
-    var label=null,nums=[];
-    r.forEach(function(c){
-      if(c==null||c==="")return;
-      var n=parseNum(c);
-      if(!isNaN(n)){nums.push(n)}
-      else if(label==null&&/[A-Za-z]/.test(String(c))){label=String(c).trim()}
-    });
-    if(nums.length>=3&&nums[0]%1===0&&nums[0]>=1&&nums[0]<=60&&nums.slice(1).some(function(x){return Math.abs(x)>100}))nums=nums.slice(1);
-    if(label&&nums.length&&!isYearRow(nums))data.push({label:label,nums:nums});
-  });
-  return {periods:periods,data:data};
-}
-function build(parsed){
-  var items={},other=[],cand={};
-  parsed.data.forEach(function(d){
-    var l=d.label.toLowerCase().replace(/\s+/g," ").replace(/[:*]+$/,"").trim();
-    if(/%|per share|\bratio\b|\beps\b|\bnote\b/.test(l))return;
-    var hit=null;
-    for(var i=0;i<CANON.length;i++){if(CANON[i][1].test(l)){hit=CANON[i][0];break}}
-    if(hit){
-      if(hit==="debt"){if(!cand.debt||Math.abs(d.nums[d.nums.length-1])>Math.abs(cand.debt[cand.debt.length-1]))cand.debt=d.nums}
-      else if(!cand[hit]||(/^(ocf|icf|cff)$/.test(hit)&&/net cash|activities/.test(l))){cand[hit]=d.nums}
-    }else if(other.length<60){other.push({label:d.label,nums:d.nums})}
-  });
-  var counts={},keys=Object.keys(cand);
-  keys.forEach(function(k){var n=cand[k].length;counts[n]=(counts[n]||0)+1});
-  var n=0,top=0;
-  Object.keys(counts).forEach(function(c){if(counts[c]>top||(counts[c]===top&&+c>n)){top=counts[c];n=+c}});
-  if(!n||keys.length<3)return null;
-  n=Math.min(n,6);
-  keys.forEach(function(k){items[k]=cand[k].slice(-n)});
-  var periods=parsed.periods;
-  if(periods&&periods.length>n)periods=periods.slice(-n);
-  var generic=false;
-  if(!periods||periods.length!==n){periods=[];generic=true;for(var i=1;i<=n;i++)periods.push("P"+i)}
-  var y=function(s){var m=String(s).match(/(19|20)\d\d|\d{2}$/);return m?+m[0]:null};
-  var y0=y(periods[0]),y1=y(periods[periods.length-1]);
-  var desc=(y0!=null&&y1!=null&&!generic)?(y0>y1):null;
-  if(desc){
-    periods=periods.slice().reverse();
-    Object.keys(items).forEach(function(k){items[k]=items[k].slice().reverse()});
-    other.forEach(function(o){o.nums=o.nums.slice().reverse()});
-  }
-  if(periods.length>4){var cut=periods.length-4;periods=periods.slice(cut);Object.keys(items).forEach(function(k){items[k]=items[k].slice(cut)})}
-  other=other.filter(function(o){return o.nums.length>=periods.length}).map(function(o){return {label:o.label,nums:o.nums.slice(-periods.length)}}).slice(0,25);
-  return {periods:periods,items:items,other:other,desc:desc,generic:generic};
-}
-async function readXlsx(file){
-  var buf=await file.arrayBuffer();
-  var wb=XLSX.read(buf,{type:"array"});
-  var best=null,bestKeys=0,unitTxt="";
-  wb.SheetNames.forEach(function(name){
-    var rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
-    unitTxt+=" "+rows.slice(0,15).map(function(r){return r.join(" ")}).join(" ");
-    var b=build(fromRows(rows));
-    if(b){var k=Object.keys(b.items).length;if(k>bestKeys){best=b;bestKeys=k}}
-  });
-  /* statements often sit on separate sheets: merge all sheets that share a period length */
-  if(best){
-    wb.SheetNames.forEach(function(name){
-      var rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
-      var b=build(fromRows(rows));
-      if(b&&b.periods.length===best.periods.length){
-        Object.keys(b.items).forEach(function(k){if(!best.items[k])best.items[k]=b.items[k]});
-      }
-    });
-  }
-  if(best)best.unit=detectUnit(unitTxt);
-  return best;
-}
-async function readCsv(file){
-  var text=await file.text();
-  var wb=XLSX.read(text,{type:"string"});
-  var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
-  return build(fromRows(rows));
-}
-function detectUnit(t){
-  var m=String(t).match(/(?:amounts?|figures?|all amounts?|rupees|rs\.?|inr|usd|eur|gbp|[₹$€£])?\s*(?:\(\s*)?(?:in|expressed in)\s*(?:[₹$€£]|rs\.?|inr|usd|eur|gbp)?\s*(crores?|cr\.?|lakhs?|lacs?|millions?|mn|billions?|bn|thousands?|'000)/i);
-  if(!m)return "";
-  return m[1].toLowerCase().replace(/^cr\.?$/,"crore").replace(/^mn$/,"million").replace(/^bn$/,"billion").replace(/s$/,"").replace(/^lac$/,"lakh");
-}
-function canonKey(label){
-  var l=String(label).toLowerCase().replace(/\s+/g," ").replace(/[:*]+$/,"").trim();
-  if(/%|per share|\bratio\b|\beps\b/.test(l))return null;
-  for(var i=0;i<CANON.length;i++){if(CANON[i][1].test(l))return CANON[i][0]}
-  return null;
-}
-var STMT_KEYS={
- is:["revenue","cogs","grossprofit","ebitda","dep","interest","pbt","netincome","tax","ebit","opex"],
- bs:["totalAssets","currentAssets","cash","receivables","inventory","currentLiab","totalLiab","debt","equity"],
- cf:["ocf","icf","cff","capex"]
-};
-var TITLES={
- is:/statements? of (consolidated )?(profit|income|operations)|profit (and|&) loss|income statement|comprehensive income/,
- bs:/balance sheet|statements? of financial position/,
- cf:/cash flows?|statements? of cash/
-};
-function lineToRow(line){
-  var yrs=line.match(/\b(19|20)\d\d\b/g);
-  if(yrs&&yrs.length>=2){
-    var rest=line.replace(/\b(19|20)\d\d\b/g," ").split(/\s+/).filter(Boolean);
-    var bad=rest.some(function(t){var n=parseNum(t);return !isNaN(n)&&Math.abs(n)>31});
-    if(!bad){var fy=/march|mar\b|fy/i.test(line);return {hdr:yrs.map(function(y){return fy?"FY"+y.slice(2):y})}}
-  }
-  var toks=line.split(" "),nums=[];
-  while(toks.length){
-    var t=toks[toks.length-1],n=parseNum(t);
-    if(isNaN(n)){
-      var prev=toks.length>1?parseNum(toks[toks.length-2]):NaN;
-      if(/^[-–—]$/.test(t)&&(nums.length>0||!isNaN(prev)))n=0;else break;
-    }
-    nums.unshift(n);toks.pop();
-  }
-  if(nums.length>=3&&nums[0]%1===0&&nums[0]>=1&&nums[0]<=60&&nums.slice(1).some(function(x){return Math.abs(x)>100}))nums.shift();
-  if(nums.length&&toks.length){
-    var label=toks.join(" ").replace(/\s+note\s*$/i,"");
-    if(/[A-Za-z]/.test(label))return {row:[label].concat(nums)};
-  }
-  return null;
-}
-async function pageLines(page){
-  var tc=await page.getTextContent();
-  var its=tc.items.filter(function(i){return i.str&&i.str.trim()});
-  its.sort(function(a,b){return (b.transform[5]-a.transform[5])||(a.transform[4]-b.transform[4])});
-  var lines=[],cur=null,cy=0;
-  its.forEach(function(it){
-    var y=it.transform[5];
-    if(cur&&Math.abs(y-cy)<=3){cur.push(it)}else{cur=[it];cy=y;lines.push(cur)}
-  });
-  return lines.map(function(l){
-    return l.sort(function(a,b){return a.transform[4]-b.transform[4]}).map(function(i){return i.str.trim()}).join(" ").replace(/\s+/g," ").trim();
-  }).filter(Boolean);
-}
-function detectName(lines){
-  var re=/^(.{3,70}?\b(?:Limited|Ltd\.?|Inc\.?|Incorporated|Corporation|Corp\.?|PLC|LLP|Company))\s*$/i;
-  for(var i=0;i<Math.min(lines.length,80);i++){
-    var m=lines[i].match(re);
-    if(m&&!/^(the|this|for|of|to|and)\s/i.test(m[1])&&!/[0-9]{3,}/.test(m[1])){
-      var n=m[1].trim();
-      if(n===n.toUpperCase())n=n.toLowerCase().replace(/\b[a-z]/g,function(c){return c.toUpperCase()});
-      return n;
-    }
-  }
-  return "";
-}
-function parsePdfPages(pages){
-  var info=pages.map(function(lines){
-    var rows=[];
-    lines.forEach(function(ln){var r=lineToRow(ln);if(!r)return;rows.push(r.hdr?r.hdr:r.row)});
-    var keys={};
-    rows.forEach(function(r){if(r.length<3||typeof r[1]!=="number")return;var k=canonKey(r[0]);if(k)keys[k]=1});
-    return {rows:rows,keys:keys,text:lines.join(" ").toLowerCase(),head:lines.slice(0,8).join(" ").toLowerCase()};
-  });
-  var name=detectName([].concat(pages[0]||[],pages[1]||[],pages[2]||[]));
-  var pick={};
-  ["is","bs","cf"].forEach(function(t){
-    var best=null,bs=0;
-    info.forEach(function(p,ix){
-      if(p.rows.length<6)return;
-      var n=STMT_KEYS[t].filter(function(k){return p.keys[k]}).length;
-      if(n<3&&!(t==="cf"&&n>=2))return;
-      var sc=n+(TITLES[t].test(p.head)?3:TITLES[t].test(p.text)?1:0)+((/consolidated/.test(p.head)&&!/standalone/.test(p.head))?1.5:0);
-      if(sc>bs){bs=sc;best=ix}
-    });
-    if(best!=null)pick[t]=best;
-  });
-  var parts=[];
-  ["is","bs","cf"].forEach(function(t){
-    if(pick[t]==null)return;
-    var r=build(fromRows(info[pick[t]].rows));
-    if(r){r.t=t;parts.push(r)}
-  });
-  var out=null;
-  if(parts.length){
-    var gdesc=null;
-    parts.forEach(function(p){if(p.desc!==null&&gdesc===null)gdesc=p.desc});
-    var n=Math.min.apply(null,parts.map(function(p){return p.periods.length}));
-    var ref=parts.filter(function(p){return !p.generic})[0]||parts[0];
-    var items={};
-    parts.forEach(function(p){
-      var rev=(p.desc===null&&gdesc===true);
-      Object.keys(p.items).forEach(function(k){
-        if(STMT_KEYS[p.t].indexOf(k)<0)return;
-        var a=p.items[k].slice();if(rev)a.reverse();
-        items[k]=a.slice(-n);
-      });
-    });
-    var per=ref.periods.slice(-n);
-    if(Object.keys(items).length>=3)out={periods:per,items:items,other:[]};
-    if(out){
-      var ut="";[pick.is,pick.bs,pick.cf].forEach(function(ix){if(ix!=null)ut+=" "+info[ix].text});
-      out.unit=detectUnit(ut)||detectUnit(info.slice(0,60).map(function(p){return p.text}).join(" "));
-    }
-  }
-  if(!out){
-    var all=[];info.forEach(function(p){all=all.concat(p.rows)});
-    out=build(fromRows(all));
-    if(out)out.unit=detectUnit(info.slice(0,60).map(function(p){return p.text}).join(" "));
-  }
-  if(out)out.name=name;
-  return out;
-}
-async function readPdf(file,onProgress){
-  if(!window.pdfjsLib)throw new Error("The PDF reader did not load. Try an Excel or CSV file instead.");
-  try{pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"}catch(e){}
-  var buf=await file.arrayBuffer();
-  var pdf=await pdfjsLib.getDocument({data:buf}).promise;
-  var pages=[],chars=0,total=Math.min(pdf.numPages,400);
-  for(var p=1;p<=total;p++){
-    if(onProgress)onProgress(p,total);
-    var page=await pdf.getPage(p);
-    var lines=await pageLines(page);
-    chars+=lines.join("").length;
-    pages.push(lines);
-  }
-  if(chars<200)throw new Error("This PDF has no readable text. It looks like scanned images, which this tool cannot read. Use the text version of the report or an Excel file.");
-  var res=parsePdfPages(pages);
-  if(!res)throw new Error("Read "+total+" pages but found no income statement, balance sheet or cash flow tables. Try the Excel version, or a PDF of just the financial statements.");
-  return res;
-}
+        // Sample Data for Fallback / Quick Testing
+        const SAMPLE_FINANCIAL_DATA = {
+            years: ['FY21', 'FY22', 'FY23', 'FY24', 'FY25'],
+            canonical: {
+                revenue: [1200000, 1450000, 1820000, 2250000, 2800000],
+                cogs: [650000, 760000, 920000, 1100000, 1340000],
+                gross_profit: [550000, 690000, 900000, 1150000, 1460000],
+                opex: [250000, 290000, 360000, 420000, 500000],
+                ebitda: [300000, 400000, 540000, 730000, 960000],
+                depreciation: [40000, 45000, 50000, 60000, 70000],
+                pbt: [260000, 355000, 490000, 670000, 890000],
+                tax: [65000, 88750, 122500, 167500, 222500],
+                pat: [195000, 266250, 367500, 502500, 667500],
+                cash: [320000, 450000, 610000, 890000, 1250000],
+                debt: [400000, 350000, 300000, 250000, 180000],
+                equity: [850000, 1116250, 1483750, 1986250, 2653750]
+            }
+        };
 
-/* ---------- derive missing lines ---------- */
-function derive(d){
-  var it=d.items,n=d.periods.length,derived={};
-  function mk(k,fn){
-    if(it[k])return;
-    var out=[],ok=true;
-    for(var i=0;i<n;i++){var v=fn(i);if(v==null||isNaN(v)){ok=false;break}out.push(v)}
-    if(ok){it[k]=out;derived[k]=1}
-  }
-  function g(k,i){return it[k]?it[k][i]:null}
-  var s=function(a,b){return a==null||b==null?null:a-b};
-  var a=function(a,b){return a==null||b==null?null:a+b};
-  mk("grossprofit",function(i){return s(g("revenue",i),Math.abs(g("cogs",i)==null?NaN:g("cogs",i)))});
-  mk("ebitda",function(i){return a(g("ebit",i),Math.abs(g("dep",i)==null?NaN:g("dep",i)))});
-  mk("ebit",function(i){return s(g("ebitda",i),Math.abs(g("dep",i)==null?NaN:g("dep",i)))});
-  mk("ebit",function(i){return a(g("pbt",i),Math.abs(g("interest",i)==null?NaN:g("interest",i)))});
-  mk("netincome",function(i){return s(g("pbt",i),Math.abs(g("tax",i)==null?NaN:g("tax",i)))});
-  mk("totalLiab",function(i){return s(g("totalAssets",i),g("equity",i))});
-  mk("fcf",function(i){return s(g("ocf",i),Math.abs(g("capex",i)==null?NaN:g("capex",i)))});
-  d.derived=derived;
-  return d;
-}
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            logDiag('Application initialized.');
+            checkSheetJsAvailability();
+            loadSampleData();
+        });
 
-/* ---------- metrics ---------- */
-function last(k,d,off){var a=d.items[k];if(!a)return null;var v=a[a.length-1-(off||0)];return v==null?null:v}
-function ratio(a,b){return a==null||b==null||b===0?null:a/b}
-function pct(a,b){var r=ratio(a,b);return r==null?null:r*100}
-function growth(k,d){var c=last(k,d),p=last(k,d,1);return c==null||p==null||p===0?null:(c-p)/Math.abs(p)*100}
-function metrics(d){
-  var M={};
-  var rev=last("revenue",d),np=last("netincome",d),ebit=last("ebit",d),intr=last("interest",d);
-  var intrA=intr==null?null:Math.abs(intr);
-  var debt=last("debt",d),eq=last("equity",d),ta=last("totalAssets",d);
-  M.rev=rev;M.np=np;M.revG=growth("revenue",d);M.npG=growth("netincome",d);
-  M.gm=pct(last("grossprofit",d),rev);
-  M.om=pct(ebit,rev);
-  M.nm=pct(np,rev);
-  M.roe=pct(np,eq);
-  M.roa=pct(np,ta);
-  M.cr=ratio(last("currentAssets",d),last("currentLiab",d));
-  var ca=last("currentAssets",d),inv=last("inventory",d);
-  M.qr=ca!=null&&last("currentLiab",d)?ratio(ca-(inv||0),last("currentLiab",d)):null;
-  M.de=ratio(debt,eq);
-  M.lev=ratio(last("totalLiab",d),eq);
-  M.ic=intrA==null?null:(intrA===0?null:ratio(ebit,intrA));
-  M.at=ratio(rev,ta);
-  M.cc=ratio(last("ocf",d),np);
-  M.nd=debt!=null&&last("cash",d)!=null?debt-last("cash",d):null;
-  M.fcf=last("fcf",d);
-  M.noDebt=(debt!=null&&debt===0);
-  return M;
-}
-function band(v,steps){ /* steps: [[min,score],...] descending thresholds */
-  for(var i=0;i<steps.length;i++){if(v>=steps[i][0])return steps[i][1]}
-  return steps[steps.length-1][1];
-}
-function credit(M){
-  var c=[];
-  if(M.cr!=null)c.push({n:"Liquidity",w:20,s:band(M.cr,[[2,100],[1.5,85],[1.2,65],[1,45],[-1e9,20]]),t:"Current ratio "+f2(M.cr)});
-  if(M.de!=null)c.push({n:"Leverage",w:25,s:band(-M.de,[[-0.3,100],[-0.6,85],[-1,65],[-2,40],[-1e9,15]]),t:"Debt to equity "+f2(M.de)});
-  if(M.ic!=null)c.push({n:"Interest cover",w:20,s:band(M.ic,[[8,100],[5,85],[3,65],[1.5,40],[-1e9,15]]),t:"EBIT covers interest "+f1(M.ic)+" times"});
-  else if(M.noDebt)c.push({n:"Interest cover",w:20,s:95,t:"No borrowings reported"});
-  if(M.nm!=null)c.push({n:"Profitability",w:15,s:band(M.nm,[[15,100],[10,85],[5,65],[2,45],[0.01,30],[-1e9,10]]),t:"Net margin "+f1(M.nm)+"%"});
-  if(M.cc!=null)c.push({n:"Cash conversion",w:10,s:band(M.cc,[[1,100],[0.8,80],[0.5,55],[0.01,35],[-1e9,15]]),t:"Operating cash flow is "+f2(M.cc)+" times net profit"});
-  if(M.revG!=null)c.push({n:"Growth",w:10,s:band(M.revG,[[15,100],[8,80],[3,60],[0,45],[-1e9,20]]),t:"Revenue growth "+f1(M.revG)+"%"});
-  var tw=0,ts=0;c.forEach(function(x){tw+=x.w;ts+=x.w*x.s});
-  var score=tw?Math.round(ts/tw):null;
-  var grade=score==null?"n/a":score>=80?"A":score>=65?"B":score>=50?"C":"D";
-  var label=score==null?"Not enough data":score>=80?"Strong":score>=65?"Good":score>=50?"Watch":"Weak";
-  var tone=score==null?"info":score>=80?"good":score>=65?"good":score>=50?"warn":"bad";
-  return {score:score,grade:grade,label:label,tone:tone,comps:c,covered:c.length};
-}
-function toneOf(s){return s>=70?"good":s>=50?"warn":"bad"}
-function signal(M,C){
-  if(C.score==null)return {word:"No view",tone:"info",why:"The file does not contain enough lines to form a view."};
-  var pts=0;
-  pts+=C.score>=75?2:C.score>=60?1:C.score<45?-2:C.score<55?-1:0;
-  if(M.revG!=null)pts+=M.revG>=10?1:M.revG<0?-1:0;
-  if(M.npG!=null)pts+=M.npG>=10?1:M.npG<-10?-1:0;
-  if(M.roe!=null)pts+=M.roe>=15?1:M.roe<5?-1:0;
-  if(M.fcf!=null)pts+=M.fcf>0?1:-1;
-  var word=pts>=4?"Accumulate":pts>=1?"Hold":"Reduce";
-  var tone=word==="Accumulate"?"good":word==="Hold"?"warn":"bad";
-  var why=word==="Accumulate"?"Healthy balance sheet with growth and returns that support adding on weakness."
-    :word==="Hold"?"Mixed picture. Fundamentals are acceptable but not strong enough to add with conviction."
-    :"Weak credit profile or deteriorating earnings. Review risk before holding more.";
-  return {word:word,tone:tone,why:why,pts:pts};
-}
-function insights(M,C){
-  var strengths=[],risks=[],opps=[];
-  if(M.revG!=null){(M.revG>=8?strengths:M.revG<0?risks:[]).push("Revenue "+(M.revG>=0?"grew ":"fell ")+f1(Math.abs(M.revG))+"% in the latest period.")}
-  if(M.nm!=null){if(M.nm>=10)strengths.push("Net margin of "+f1(M.nm)+"% shows pricing power or cost control.");else if(M.nm<3)risks.push("Net margin is thin at "+f1(M.nm)+"%, so small cost shocks hit profit.")}
-  if(M.npG!=null&&M.revG!=null&&M.npG>M.revG+5)strengths.push("Profit is growing faster than sales ("+f1(M.npG)+"% against "+f1(M.revG)+"%), a sign of operating leverage.");
-  if(M.npG!=null&&M.revG!=null&&M.npG<M.revG-10)risks.push("Profit growth ("+f1(M.npG)+"%) lags sales growth ("+f1(M.revG)+"%). Margins are being squeezed.");
-  if(M.cr!=null){if(M.cr>=1.5)strengths.push("Current ratio of "+f2(M.cr)+" gives comfortable short-term liquidity.");else if(M.cr<1)risks.push("Current ratio below 1 ("+f2(M.cr)+"). Short-term obligations exceed liquid assets.")}
-  if(M.de!=null){if(M.de<=0.6)strengths.push("Low borrowings with debt to equity of "+f2(M.de)+".");else if(M.de>1.5)risks.push("High leverage with debt to equity of "+f2(M.de)+".")}
-  if(M.ic!=null&&M.ic<3)risks.push("Interest cover of "+f1(M.ic)+" times leaves little buffer.");
-  if(M.cc!=null){if(M.cc>=0.9)strengths.push("Profits turn into cash. Operating cash flow is "+f2(M.cc)+" times net profit.");else if(M.cc<0.6)risks.push("Cash conversion is weak. Check receivables and inventory build-up.")}
-  if(M.roe!=null&&M.roe>=15)strengths.push("Return on equity of "+f1(M.roe)+"% is above a typical 15% hurdle.");
-  if(M.fcf!=null&&M.fcf>0&&M.nd!=null&&M.nd>0)opps.push("Positive free cash flow can be used to pay down net debt of "+fk(M.nd)+", which lifts earnings through lower interest.");
-  if(M.fcf!=null&&M.fcf>0&&(M.nd==null||M.nd<=0))opps.push("Free cash flow with a net cash position leaves room for dividends, buybacks or acquisitions.");
-  if(M.roe!=null&&M.roe>=15&&M.de!=null&&M.de<=1)opps.push("High returns on equity with moderate leverage support reinvestment for growth.");
-  if(M.gm!=null&&M.om!=null&&M.gm-M.om>20)opps.push("A wide gap between gross and operating margin ("+f1(M.gm-M.om)+" points) suggests overhead savings could lift profit.");
-  if(M.at!=null&&M.at<0.8)opps.push("Asset turnover of "+f2(M.at)+" is low. Better use of assets would improve returns.");
-  if(M.revG!=null&&M.revG>=8&&M.nm!=null&&M.nm>=5)opps.push("Growth with positive margins suggests the business can fund expansion from earnings.");
-  if(!strengths.length)strengths.push("No standout strengths found in the lines available.");
-  if(!risks.length)risks.push("No major red flags in the lines available.");
-  if(!opps.length)opps.push("No clear opportunity stands out from the figures alone.");
-  return {strengths:strengths,risks:risks,opps:opps};
-}
-function overviewText(d,M,C){
-  var p=d.periods[d.periods.length-1];
-  var parts=[];
-  if(M.rev!=null)parts.push(esc(d.name)+" reported revenue of "+fk(M.rev)+" in "+esc(p)+(M.revG!=null?", "+(M.revG>=0?"up ":"down ")+f1(Math.abs(M.revG))+"% on the prior period":"")+".");
-  if(M.np!=null)parts.push("Net profit was "+fk(M.np)+(M.nm!=null?" ("+f1(M.nm)+"% margin)":"")+".");
-  if(M.de!=null)parts.push("Borrowings are "+f2(M.de)+" times equity"+(M.cr!=null?" and the current ratio is "+f2(M.cr):"")+".");
-  if(C.score!=null)parts.push("Overall credit health reads "+C.label.toLowerCase()+" at "+C.score+" out of 100.");
-  return parts.join(" ")||"Not enough lines were recognised to write an overview.";
-}
+        // Diagnostics Logging Helper
+        function logDiag(msg) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${msg}`;
+            state.diagnosticsLog.push(logEntry);
+            const diagLogElem = document.getElementById('diagLog');
+            if (diagLogElem) {
+                diagLogElem.textContent = state.diagnosticsLog.join('\n');
+            }
+        }
 
-/* ---------- formatting ---------- */
-function f1(n){return n==null?"n/a":n.toLocaleString("en-US",{maximumFractionDigits:1,minimumFractionDigits:1})}
-function f2(n){return n==null?"n/a":n.toLocaleString("en-US",{maximumFractionDigits:2,minimumFractionDigits:2})}
-function fk(n){if(n==null)return "n/a";var s=Math.abs(n).toLocaleString("en-US",{maximumFractionDigits:1});return n<0?"("+s+")":s}
-function fp(n){return n==null?"n/a":(n>0?"+":"")+f1(n)+"%"}
+        // Verify SheetJS Availability
+        function checkSheetJsAvailability() {
+            const isAvailable = typeof XLSX !== 'undefined';
+            const statusElem = document.getElementById('diagSheetJSStatus');
+            if (statusElem) {
+                statusElem.textContent = isAvailable ? 'Loaded & Ready (window.XLSX)' : 'Failed / Fallback Mode';
+                statusElem.className = isAvailable ? 'ml-2 font-bold text-emerald-400' : 'ml-2 font-bold text-red-400';
+            }
+            logDiag(`SheetJS presence check: ${isAvailable}`);
+            return isAvailable;
+        }
 
-/* ---------- sample data ---------- */
-var DEMO={name:"Sample Industries Ltd",periods:["FY22","FY23","FY24","FY25"],items:{
- revenue:[820,910,1010,1130],cogs:[520,570,620,680],grossprofit:[300,340,390,450],opex:[150,165,185,205],ebitda:[175,200,230,275],dep:[25,30,32,35],ebit:[150,170,198,240],interest:[18,17,16,14],pbt:[132,153,182,226],tax:[33,38,45,56],netincome:[99,115,137,170],
- cash:[60,75,95,125],receivables:[150,160,175,190],inventory:[140,145,150,155],currentAssets:[420,460,505,560],totalAssets:[980,1060,1150,1260],currentLiab:[260,270,285,290],debt:[280,270,255,230],totalLiab:[540,560,580,590],equity:[440,500,570,670],
- ocf:[110,125,150,190],icf:[-70,-62,-58,-66],cff:[-30,-38,-52,-60],capex:[60,55,50,60]},other:[]};
+        // Display User Status Message Banner
+        function showStatus(title, message, type = 'info') {
+            const banner = document.getElementById('statusBanner');
+            const icon = document.getElementById('statusIcon');
+            const titleElem = document.getElementById('statusTitle');
+            const msgElem = document.getElementById('statusMessage');
 
-/* ---------- state ---------- */
-var S={data:null,source:"demo",tab:"overview",ai:null,aiBusy:false,aiErr:"",mkt:null,mktBusy:false,mktErr:"",wl:[]};
-try{var w=JSON.parse(localStorage.getItem("ci-wl")||"[]");if(Array.isArray(w))S.wl=w.filter(function(x){return typeof x==="string"}).slice(0,12)}catch(e){}
-function saveWl(){try{localStorage.setItem("ci-wl",JSON.stringify(S.wl))}catch(e){}}
-function setData(d,src){
-  d.items=d.items||{};
-  S.data=derive(JSON.parse(JSON.stringify(d)));
-  S.data.name=d.name;
-  S.source=src;S.ai=null;S.aiErr="";
-  render();
-}
+            banner.className = 'p-4 rounded-xl border flex items-start gap-3 transition-all duration-300 ';
 
-/* ---------- views ---------- */
-var TABS=[["overview","Overview"],["statements","Financial statements"],["ratios","Ratios"],["credit","Credit health"],["ideas","Opportunities"],["market","Market watch"]];
-function renderRail(){
-  $("#rail").innerHTML=TABS.map(function(t){return '<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' aria-current="true"':'')+'>'+t[1]+'</button>'}).join("");
-}
-function missingNote(d){
-  if(S.source==="demo")return "";
-  var core=["revenue","netincome","totalAssets","equity","debt","ocf","currentAssets","currentLiab"];
-  var miss=core.filter(function(k){return !d.items[k]}).map(function(k){return LABELS[k]||k});
-  return miss.length?'<span class="pill warn">Not found</span><span>'+miss.map(esc).join(", ")+'</span>':"";
-}
-function banner(){
-  var d=S.data;
-  return '<div class="banner">'+(S.source==="demo"?'<span class="pill info">Sample data</span><span>Upload your own file to replace it.</span>':'<span class="pill good">Your file</span><span>'+esc(d.fileName||d.name)+'</span>')+
-   '<span>Periods: '+d.periods.map(esc).join(", ")+'</span>'+(d.unit?'<span>Units: '+esc(d.unit)+' (as stated in the file)</span>':'<span>Figures are shown in the units used in the file.</span>')+missingNote(d)+'</div>';
-}
-function chart(d){
-  var rev=d.items.revenue,np=d.items.netincome;
-  if(!rev)return "";
-  var n=rev.length,W=560,H=230,L=44,B=28,T=14,R=10;
-  var mx=Math.max.apply(null,rev.concat(np||[0]));
-  var step=Math.pow(10,Math.floor(Math.log10(mx||1)));
-  var top=Math.ceil(mx/step)*step;if(top/step<3)top=Math.ceil(mx/(step/2))*(step/2);
-  var iw=W-L-R,ih=H-T-B,gw=iw/n,bw=Math.min(34,gw/3);
-  var y=function(v){return T+ih-(v/top)*ih};
-  var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Revenue and net profit by period">';
-  for(var i=0;i<=4;i++){var v=top/4*i;s+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+Math.round(v).toLocaleString("en-US")+'</text>'}
-  for(var j=0;j<n;j++){
-    var cx=L+gw*j+gw/2;
-    s+='<rect x="'+(cx-bw-2)+'" y="'+y(rev[j])+'" width="'+bw+'" height="'+(T+ih-y(rev[j]))+'" fill="#8C3B4A" rx="2"/>';
-    if(np&&np[j]!=null){var h=Math.max(0,T+ih-y(Math.max(np[j],0)));s+='<rect x="'+(cx+2)+'" y="'+(T+ih-h)+'" width="'+bw+'" height="'+h+'" fill="#D9A3AB" rx="2"/>'}
-    s+='<text class="ax" x="'+cx+'" y="'+(H-8)+'" text-anchor="middle">'+esc(d.periods[j])+'</text>';
-  }
-  s+='</svg><div class="legend"><span><i style="background:#8C3B4A"></i>Revenue</span><span><i style="background:#D9A3AB"></i>Net profit</span></div>';
-  return s;
-}
-function viewOverview(){
-  var d=S.data,M=metrics(d),C=credit(M),sg=signal(M,C);
-  var h=banner();
-  h+='<section class="panel"><h2>'+esc(d.name)+'</h2><p class="sub">Company overview</p>';
-  h+='<p style="margin:0 0 16px;max-width:70ch">'+(S.ai&&S.ai.overview?esc(S.ai.overview):overviewText(d,M,C))+'</p>';
-  h+='<div class="kpis">'+
-   kpi("Revenue",fk(M.rev),M.revG==null?"":fp(M.revG)+" on prior period",M.revG)+
-   kpi("Net profit",fk(M.np),M.nm==null?"":f1(M.nm)+"% margin",M.npG)+
-   kpi("Credit score",C.score==null?"n/a":C.score+"/100","Grade "+C.grade+" · "+C.label,null)+
-   kpi("Fundamental view",sg.word,"From the file only",null)+'</div></section>';
-  h+='<section class="panel"><h3>Revenue and net profit</h3>'+chart(d)+'</section>';
-  h+=aiPanel();
-  return h;
-}
-function kpi(l,v,dd,g){return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div><div class="d'+(g!=null?(g>=0?" up":" down"):"")+'">'+esc(dd)+'</div></div>'}
-function aiPanel(){
-  var h='<section class="panel"><h3>Claude analyst brief</h3>';
-  if(S.ai){
-    h+='<p style="margin:0 0 8px"><span class="pill '+(S.ai.stance==="Accumulate"?"good":S.ai.stance==="Reduce"?"bad":"warn")+'">'+esc(S.ai.stance||"")+'</span> '+esc(S.ai.stanceReason||"")+'</p>';
-    h+='<div class="grid2">'+aiList("Strengths",S.ai.strengths,"good")+aiList("Risks",S.ai.risks,"bad")+aiList("Opportunities",S.ai.opportunities,"")+'</div>';
-    h+='<p class="note" style="margin:12px 0 0">Written by Claude from the figures extracted above. Verify before acting.</p>';
-  }else{
-    h+='<p class="sub">Ask Claude to read the extracted figures and write a short overview, strengths, risks and opportunities.</p>';
-  }
-  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px"><button class="btn" id="aiBtn" type="button"'+(S.aiBusy?' disabled':'')+'>'+(S.aiBusy?'Analysing…':S.ai?'Refresh brief':'Generate brief')+'</button><span class="msg'+(S.aiErr?' err':'')+'">'+esc(S.aiErr)+'</span></div></section>';
-  return h;
-}
-function aiList(t,a,tone){
-  a=Array.isArray(a)?a:[];
-  return '<div><h3>'+t+'</h3><ul class="list">'+a.slice(0,5).map(function(x){return '<li><span class="dot '+tone+'"></span><span>'+esc(x)+'</span></li>'}).join("")+'</ul></div>';
-}
-function tbl(d,rows,title,sub){
-  var h='<section class="panel"><h2>'+title+'</h2><p class="sub">'+sub+'</p><div class="tablewrap"><table><thead><tr><th>Line item</th>'+d.periods.map(function(p){return '<th>'+esc(p)+'</th>'}).join("")+'</tr></thead><tbody>';
-  var any=false;
-  rows.forEach(function(r){
-    var a=d.items[r[0]];if(!a)return;any=true;
-    h+='<tr'+(r[2]?' class="tot"':'')+'><td>'+r[1]+(d.derived&&d.derived[r[0]]?'<span class="tag">derived</span>':'')+'</td>'+a.map(function(v){return '<td>'+fk(v)+'</td>'}).join("")+'</tr>';
-  });
-  if(!any)h+='<tr><td colspan="'+(d.periods.length+1)+'">No lines recognised for this statement.</td></tr>';
-  return h+'</tbody></table></div></section>';
-}
-function viewStatements(){
-  var d=S.data;
-  var h=banner();
-  h+=tbl(d,STMT.is,"Income statement","Profit and loss for each period.");
-  h+=tbl(d,STMT.bs,"Balance sheet","Assets, liabilities and equity at period end.");
-  h+=tbl(d,STMT.cf,"Cash flow","Where cash came from and where it went.");
-  if(d.other&&d.other.length){
-    h+='<section class="panel"><h2>Other lines found</h2><p class="sub">Rows in the file that did not match a standard statement line.</p><div class="tablewrap"><table><thead><tr><th>Line</th>'+d.periods.map(function(p){return '<th>'+esc(p)+'</th>'}).join("")+'</tr></thead><tbody>'+
-     d.other.map(function(o){return '<tr><td>'+esc(o.label)+'</td>'+o.nums.map(function(v){return '<td>'+fk(v)+'</td>'}).join("")+'</tr>'}).join("")+'</tbody></table></div></section>';
-  }
-  return h;
-}
-function rstat(v,good,bad,inv){ /* higher better unless inv */
-  if(v==null)return "info";
-  if(inv){return v<=good?"good":v>=bad?"bad":"warn"}
-  return v>=good?"good":v<=bad?"bad":"warn";
-}
-function viewRatios(){
-  var d=S.data,M=metrics(d);
-  var rows=[
-   ["Growth","Revenue growth",fp(M.revG),rstat(M.revG,8,0),"Change versus the prior period."],
-   ["Growth","Net profit growth",fp(M.npG),rstat(M.npG,8,0),"Change versus the prior period."],
-   ["Profitability","Gross margin",M.gm==null?"n/a":f1(M.gm)+"%",rstat(M.gm,35,15),"Gross profit as a share of revenue."],
-   ["Profitability","Operating margin",M.om==null?"n/a":f1(M.om)+"%",rstat(M.om,15,5),"EBIT as a share of revenue."],
-   ["Profitability","Net margin",M.nm==null?"n/a":f1(M.nm)+"%",rstat(M.nm,10,3),"Net profit as a share of revenue."],
-   ["Returns","Return on equity",M.roe==null?"n/a":f1(M.roe)+"%",rstat(M.roe,15,6),"Net profit over shareholders' equity."],
-   ["Returns","Return on assets",M.roa==null?"n/a":f1(M.roa)+"%",rstat(M.roa,8,3),"Net profit over total assets."],
-   ["Liquidity","Current ratio",f2(M.cr),rstat(M.cr,1.5,1),"Current assets over current liabilities."],
-   ["Liquidity","Quick ratio",f2(M.qr),rstat(M.qr,1,0.7),"Current assets less inventory, over current liabilities."],
-   ["Leverage","Debt to equity",f2(M.de),rstat(M.de,0.6,1.5,true),"Borrowings over shareholders' equity."],
-   ["Leverage","Liabilities to equity",f2(M.lev),rstat(M.lev,1,2,true),"Total liabilities over equity."],
-   ["Leverage","Interest cover",M.ic==null?"n/a":f1(M.ic)+"x",rstat(M.ic,5,2),"EBIT over interest expense."],
-   ["Efficiency","Asset turnover",M.at==null?"n/a":f2(M.at)+"x",rstat(M.at,1,0.5),"Revenue over total assets."],
-   ["Cash","Cash conversion",M.cc==null?"n/a":f2(M.cc)+"x",rstat(M.cc,0.9,0.5),"Operating cash flow over net profit."],
-   ["Cash","Free cash flow",fk(M.fcf),M.fcf==null?"info":M.fcf>0?"good":"bad","Operating cash flow less capital expenditure."]
-  ];
-  var h=banner()+'<section class="panel"><h2>Key ratios</h2><p class="sub">Latest period ('+esc(d.periods[d.periods.length-1])+'). The status marks how each reads against common thresholds.</p><div class="tablewrap"><table><thead><tr><th>Ratio</th><th>Group</th><th>Value</th><th>Status</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var lab={good:"Healthy",warn:"Watch",bad:"Weak",info:"No data"}[r[3]];
-    h+='<tr><td>'+r[1]+'<div class="note" style="white-space:normal">'+r[4]+'</div></td><td style="text-align:left">'+r[0]+'</td><td><b>'+r[2]+'</b></td><td><span class="pill '+r[3]+'">'+lab+'</span></td></tr>';
-  });
-  return h+'</tbody></table></div></section>';
-}
-function viewCredit(){
-  var d=S.data,M=metrics(d),C=credit(M),I=insights(M,C);
-  var col={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)",info:"var(--accent)"};
-  var h=banner()+'<section class="panel"><h2>Credit health</h2><p class="sub">An indicative score built from six checks on liquidity, leverage, cover, margin, cash and growth. It is not a rating agency grade.</p>';
-  h+='<div class="gauge"><div class="score" style="color:'+col[C.tone]+'">'+(C.score==null?"n/a":C.score)+'</div><div><span class="pill '+C.tone+'">'+C.label+'</span><div style="margin-top:6px;color:var(--muted)">Grade '+C.grade+' · based on '+C.covered+' of 6 checks</div></div></div>';
-  h+='<div style="margin-top:14px">'+C.comps.map(function(x){var t=toneOf(x.s);return '<div class="comp"><b>'+x.n+'</b><div><div class="bar"><i style="width:'+x.s+'%;background:'+col[t]+'"></i></div><div class="note">'+esc(x.t)+'</div></div><span class="n">'+x.s+'</span></div>'}).join("")+'</div></section>';
-  h+='<div class="grid2"><section class="panel"><h3>Strengths</h3><ul class="list">'+I.strengths.map(function(x){return '<li><span class="dot good"></span><span>'+esc(x)+'</span></li>'}).join("")+'</ul></section><section class="panel"><h3>Watch points</h3><ul class="list">'+I.risks.map(function(x){return '<li><span class="dot bad"></span><span>'+esc(x)+'</span></li>'}).join("")+'</ul></section></div>';
-  return h;
-}
-function viewIdeas(){
-  var d=S.data,M=metrics(d),C=credit(M),I=insights(M,C),sg=signal(M,C);
-  var h=banner()+'<section class="panel"><h2>Investment view</h2><p class="sub">A rule-based read of the fundamentals in the file. It does not account for price, valuation or news.</p>';
-  h+='<div class="signal"><span class="word" style="color:var(--'+(sg.tone==="info"?"accent":sg.tone)+')">'+sg.word+'</span><span style="max-width:60ch">'+esc(sg.why)+'</span></div></section>';
-  h+='<section class="panel"><h3>Opportunities</h3><ul class="list">'+I.opps.map(function(x){return '<li><span class="dot"></span><span>'+esc(x)+'</span></li>'}).join("")+'</ul></section>';
-  h+='<section class="panel"><h3>What would change the view</h3><ul class="list">'+
-   '<li><span class="dot good"></span><span>Upgrade: net margin holding above 10% while current-year revenue growth stays positive and debt to equity falls.</span></li>'+
-   '<li><span class="dot warn"></span><span>Downgrade: cash conversion under 0.5, interest cover under 3 times, or two periods of falling profit.</span></li></ul></section>';
-  h+=aiPanel();
-  return h;
-}
-function tick(t){return t.replace(/[^A-Za-z0-9.\-:^]/g,"").toUpperCase().slice(0,16)}
-function viewMarket(){
-  var h='<section class="panel"><h2>Market watch</h2><p class="sub">News, IPOs and buy or sell ideas change by the minute. This page cannot read a live market feed, so it links to live sources and can ask Claude for a framework. Nothing here is live data.</p>';
-  h+='<h3>Your watchlist</h3><form class="wl" id="wlForm"><input id="wlIn" type="text" placeholder="Ticker, for example AAPL or RELIANCE.NS" aria-label="Ticker symbol" maxlength="16"><button class="btn" type="submit">Add</button></form>';
-  h+='<div class="chips">'+(S.wl.length?S.wl.map(function(t){return '<span class="chip">'+esc(t)+' <a href="https://finance.yahoo.com/quote/'+encodeURIComponent(t)+'/news" target="_blank" rel="noopener">News</a> <a href="https://finance.yahoo.com/quote/'+encodeURIComponent(t)+'" target="_blank" rel="noopener">Quote</a><button type="button" data-rm="'+esc(t)+'" aria-label="Remove '+esc(t)+'">×</button></span>'}).join(""):'<span class="note">Add tickers to get one-click links to news and quotes.</span>')+'</div></section>';
-  h+='<section class="panel"><h3>Live sources</h3><div class="links">'+
-   lnk("https://www.reuters.com/markets/","Reuters Markets","Market news and company headlines")+
-   lnk("https://www.moneycontrol.com/news/business/markets/","Moneycontrol markets","Indian market news and analysis")+
-   lnk("https://www.moneycontrol.com/ipo/","IPO calendar","Open, upcoming and listed issues")+
-   lnk("https://www.nseindia.com","NSE India","Exchange announcements and IPO notices")+
-   lnk("https://www.bseindia.com","BSE India","Exchange filings and public issues")+
-   lnk("https://finance.yahoo.com/markets/","Yahoo Finance markets","Global indices, movers and quotes")+'</div></section>';
-  h+='<section class="panel"><h3>Claude market brief</h3>';
-  h+='<div class="note" style="margin-bottom:10px"><span class="pill warn">Not live</span> Claude writes this from its own knowledge, which can be out of date. Use it to decide what to look up, then confirm prices, news and IPO dates at the sources above.</div>';
-  if(S.mkt){
-    var m=S.mkt;
-    if(m.themes&&m.themes.length)h+='<h3 style="margin-top:12px">Themes to check</h3><ul class="list">'+m.themes.slice(0,5).map(function(x){return '<li><span class="dot"></span><span><b>'+esc(x.headline)+'</b> '+esc(x.why)+'</span></li>'}).join("")+'</ul>';
-    if(m.ipoChecklist&&m.ipoChecklist.length)h+='<h3 style="margin-top:14px">Before applying to an IPO</h3><ul class="list">'+m.ipoChecklist.slice(0,6).map(function(x){return '<li><span class="dot"></span><span>'+esc(x)+'</span></li>'}).join("")+'</ul>';
-    if(m.ideas&&m.ideas.length)h+='<h3 style="margin-top:14px">Watchlist leanings</h3><div class="tablewrap"><table><thead><tr><th>Ticker</th><th>Lean</th><th style="text-align:left">Reason</th></tr></thead><tbody>'+m.ideas.slice(0,12).map(function(x){var l=String(x.lean||"");var t=/buy/i.test(l)?"good":/sell|reduce/i.test(l)?"bad":"warn";return '<tr><td>'+esc(x.ticker)+'</td><td><span class="pill '+t+'">'+esc(l)+'</span></td><td style="text-align:left;white-space:normal;min-width:220px">'+esc(x.reason)+'</td></tr>'}).join("")+'</tbody></table></div>';
-  }
-  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><button class="btn" id="mktBtn" type="button"'+(S.mktBusy?' disabled':'')+'>'+(S.mktBusy?'Thinking…':S.mkt?'Refresh brief':'Ask Claude for a brief')+'</button><span class="msg'+(S.mktErr?' err':'')+'">'+esc(S.mktErr)+'</span></div></section>';
-  return h;
-}
-function lnk(u,t,s){return '<a href="'+u+'" target="_blank" rel="noopener"><b>'+t+'</b><span>'+s+'</span></a>'}
+            if (type === 'error') {
+                banner.classList.add('bg-red-950/60', 'border-red-800/60', 'text-red-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-400"></i>';
+            } else if (type === 'success') {
+                banner.classList.add('bg-emerald-950/60', 'border-emerald-800/60', 'text-emerald-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else {
+                banner.classList.add('bg-indigo-950/60', 'border-indigo-800/60', 'text-indigo-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-info text-indigo-400"></i>';
+            }
 
-function render(){
-  renderRail();
-  var v=$("#view");
-  if(!S.data){v.innerHTML='<section class="panel"><h2>Upload a file to begin</h2><p class="sub">Choose an Excel, CSV or PDF with an income statement, balance sheet or cash flow.</p></section>';return}
-  var fn={overview:viewOverview,statements:viewStatements,ratios:viewRatios,credit:viewCredit,ideas:viewIdeas,market:viewMarket}[S.tab]||viewOverview;
-  v.innerHTML=fn();
-  bind();
-}
-function bind(){
-  var a=$("#aiBtn");if(a)a.addEventListener("click",runAi);
-  var m=$("#mktBtn");if(m)m.addEventListener("click",runMkt);
-  var f=$("#wlForm");
-  if(f)f.addEventListener("submit",function(e){e.preventDefault();var t=tick($("#wlIn").value);if(t&&S.wl.indexOf(t)<0&&S.wl.length<12){S.wl.push(t);saveWl()}render()});
-  document.querySelectorAll("[data-rm]").forEach(function(b){b.addEventListener("click",function(){S.wl=S.wl.filter(function(x){return x!==b.getAttribute("data-rm")});saveWl();render()})});
-}
+            titleElem.textContent = title;
+            msgElem.textContent = message;
+            banner.classList.remove('hidden');
+        }
 
-/* ---------- Claude (sample capability) ---------- */
-async function getSample(){
-  try{if(window.claude&&window.claude.use){return await window.claude.use("sample")}}catch(e){}
-  return null;
-}
-async function runAi(){
-  S.aiBusy=true;S.aiErr="";render();
-  try{
-    var sample=await getSample();
-    if(!sample){S.aiErr="Claude analysis is not available in this view.";return}
-    var payload={company:S.data.name,periods:S.data.periods,figuresInFileUnits:S.data.items};
-    var r=await sample.json("You are a careful equity and credit analyst. Use only the extracted figures below. Do not invent facts about the business; if its industry is unknown, say so. Reply with JSON only, shaped as {\"overview\":\"two or three plain sentences on the company and its financial position\",\"strengths\":[\"..\"],\"risks\":[\"..\"],\"opportunities\":[\"..\"],\"stance\":\"Accumulate|Hold|Reduce\",\"stanceReason\":\"one sentence\"} with three items in each list.\n\nData:\n"+JSON.stringify(payload),{modelTier:"default",cache:false});
-    if(r&&typeof r==="object")S.ai=r;else S.aiErr="Claude returned an unexpected answer. Try again.";
-  }catch(e){
-    S.aiErr=e&&e.code==="not_granted"?"Permission to ask Claude was not given.":e&&e.code==="rate_limited"?"Too many requests. Wait a moment and try again.":"The analysis could not be completed. Try again.";
-  }finally{S.aiBusy=false;render()}
-}
-async function runMkt(){
-  S.mktBusy=true;S.mktErr="";render();
-  try{
-    var sample=await getSample();
-    if(!sample){S.mktErr="Claude is not available in this view.";return}
-    var r=await sample.json("Today is 16 October 2026. You have no live market data and your knowledge ends before today, so write general, durable guidance and say what to verify. Reply with JSON only, shaped as {\"themes\":[{\"headline\":\"short theme to check in the news\",\"why\":\"one sentence on why it matters for stocks\"}],\"ipoChecklist\":[\"short checks before subscribing to an IPO\"],\"ideas\":[{\"ticker\":\"..\",\"lean\":\"Buy|Hold|Sell\",\"reason\":\"one sentence based on durable business traits, not recent prices\"}]}. Give 4 themes, 6 checklist items, and one idea for each ticker in this watchlist (leave ideas empty if the list is empty): "+JSON.stringify(S.wl),{modelTier:"default",cache:false});
-    if(r&&typeof r==="object")S.mkt=r;else S.mktErr="Claude returned an unexpected answer. Try again.";
-  }catch(e){
-    S.mktErr=e&&e.code==="not_granted"?"Permission to ask Claude was not given.":e&&e.code==="rate_limited"?"Too many requests. Wait a moment and try again.":"The brief could not be completed. Try again.";
-  }finally{S.mktBusy=false;render()}
-}
+        function hideStatusBanner() {
+            document.getElementById('statusBanner').classList.add('hidden');
+        }
 
-/* ---------- upload wiring ---------- */
-function say(t,err){var m=$("#msg");m.textContent=t||"";m.className="msg"+(err?" err":"")}
-async function handle(file){
-  if(!file)return;
-  var ext=(file.name.split(".").pop()||"").toLowerCase();
-  say("Reading "+file.name+"…");
-  try{
-    var res=null;
-    if(ext==="pdf")res=await readPdf(file,function(p,t){if(p%5===0||p===t)say("Reading page "+p+" of "+t+"…")});
-    else if(ext==="csv")res=await readCsv(file);
-    else if(ext==="xlsx"||ext==="xls")res=await readXlsx(file);
-    else{say("Use an .xlsx, .xls, .csv or .pdf file.",true);return}
-    if(!res){say("No financial statement lines were recognised. Check that the file has labelled rows such as Revenue, Net profit and Total assets with numbers beside them.",true);return}
-    var name=file.name.replace(/\.[^.]+$/,"").replace(/[_\-]+/g," ").trim();
-    res.name=res.name||name||"Uploaded company";res.fileName=file.name;
-    S.tab="overview";
-    setData(res,"file");
-    try{window.scrollTo(0,0)}catch(e){}
-    say("Read "+Object.keys(res.items).length+" statement lines across "+res.periods.length+" periods from "+file.name+".");
-  }catch(e){
-    say((e&&e.message)?e.message:"The file could not be read.",true);
-  }
-}
-$("#pick").addEventListener("click",function(){$("#file").click()});
-$("#file").addEventListener("change",function(e){handle(e.target.files[0]);e.target.value=""});
-$("#demo").addEventListener("click",function(){say("");setData(DEMO,"demo")});
-var dz=$("#drop");
-["dragenter","dragover"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add("over")})});
-["dragleave","drop"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove("over")})});
-dz.addEventListener("drop",function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];handle(f)});
-$("#rail").addEventListener("click",function(e){var b=e.target.closest("[data-tab]");if(b){S.tab=b.getAttribute("data-tab");render()}});
+        // File Processing Handler
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-window.__CI={readPdf:readPdf,parsePdfPages:parsePdfPages,build:build,fromRows:fromRows,derive:derive,metrics:metrics,credit:credit,lineToRow:lineToRow};
-setData(DEMO,"demo");
-})();
-</script>
+            hideStatusBanner();
+            state.fileName = file.name;
+            document.getElementById('diagFileName').textContent = file.name;
+            logDiag(`File uploaded: ${file.name} (${file.size} bytes)`);
 
-</body></html>
+            // Check SheetJS
+            if (typeof XLSX === 'undefined') {
+                logDiag('XLSX is not globally available. Attempting fallback text parsing.');
+                if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+                    parseCSVFallback(file);
+                } else {
+                    showStatus('Excel Parse Error', 'SheetJS library failed to load properly from CDN. Please check network or load sample data.', 'error');
+                }
+                return;
+            }
+
+            try {
+                // Dual Reader Approach: ArrayBuffer / BinaryString for maximum compatibility
+                const data = await readFileAsArrayBuffer(file);
+                
+                // Read Workbook securely
+                let workbook;
+                try {
+                    workbook = XLSX.read(data, { type: 'array', cellDates: true, raw: false });
+                } catch (arrayErr) {
+                    logDiag(`ArrayBuffer parse failed, trying binary string fallback: ${arrayErr.message}`);
+                    const binaryData = await readFileAsBinaryString(file);
+                    workbook = XLSX.read(binaryData, { type: 'binary', cellDates: true, raw: false });
+                }
+
+                if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                    throw new Error('No sheets found in uploaded Excel file.');
+                }
+
+                state.workbook = workbook;
+                logDiag(`Workbook read successfully. Sheets found: ${workbook.SheetNames.join(', ')}`);
+
+                // Update Sheet Selector
+                const sheetSelect = document.getElementById('sheetSelector');
+                sheetSelect.innerHTML = '';
+                workbook.SheetNames.forEach(sheetName => {
+                    const opt = document.createElement('option');
+                    opt.value = sheetName;
+                    opt.textContent = sheetName;
+                    sheetSelect.appendChild(opt);
+                });
+
+                document.getElementById('activeFileTag').classList.remove('hidden');
+                document.getElementById('activeFileTag').textContent = file.name.length > 20 ? file.name.substring(0,18) + '...' : file.name;
+
+                // Load first sheet
+                switchSheet(workbook.SheetNames[0]);
+                showStatus('File Loaded Successfully', `Successfully parsed '${file.name}' with ${workbook.SheetNames.length} sheet(s).`, 'success');
+
+            } catch (err) {
+                console.error(err);
+                logDiag(`Parse Critical Error: ${err.message}`);
+                showStatus('Excel Parse Error', `Could not read Excel file workbook. (${err.message || 'Corrupted or encrypted file format'})`, 'error');
+            }
+        }
+
+        // Helper File Readers
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('FileReader ArrayBuffer error'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function readFileAsBinaryString(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('FileReader BinaryString error'));
+                reader.readAsBinaryString(file);
+            });
+        }
+
+        // Switch Active Sheet Logic
+        function switchSheet(sheetName) {
+            if (!state.workbook || !state.workbook.Sheets[sheetName]) return;
+
+            state.activeSheetName = sheetName;
+            logDiag(`Switching to sheet: ${sheetName}`);
+
+            const worksheet = state.workbook.Sheets[sheetName];
+            // Convert worksheet to raw 2D Matrix
+            const matrix = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            state.rawMatrix = matrix;
+
+            parseFinancialMatrix(matrix);
+        }
+
+        // Dynamic Sheet Header Detection & Matrix Parsing
+        function parseFinancialMatrix(matrix) {
+            if (!matrix || matrix.length === 0) {
+                logDiag('Matrix empty');
+                showStatus('Empty Sheet', 'Selected sheet contains no readable cell matrix.', 'error');
+                return;
+            }
+
+            // Detect Header Row containing Financial Years (FY20, FY21, 2021, 2022, etc.)
+            let headerIdx = -1;
+            let detectedYears = [];
+            let yearColIndices = [];
+
+            const yearRegex = /(FY\s*\d{2,4}|20\d{2}|19\d{2}|Q[1-4]\s*\d{2,4})/i;
+
+            for (let r = 0; r < Math.min(matrix.length, 25); r++) {
+                const row = matrix[r];
+                if (!Array.isArray(row)) continue;
+
+                const matchedYears = [];
+                const colIndices = [];
+
+                row.forEach((cell, cIdx) => {
+                    const str = String(cell).trim();
+                    if (yearRegex.test(str)) {
+                        matchedYears.push(str.toUpperCase().replace(/\s+/g, ''));
+                        colIndices.push(cIdx);
+                    }
+                });
+
+                if (matchedYears.length >= 2) {
+                    headerIdx = r;
+                    detectedYears = matchedYears;
+                    yearColIndices = colIndices;
+                    break;
+                }
+            }
+
+            // Fallback header detection if no explicit years found
+            if (headerIdx === -1) {
+                for (let r = 0; r < Math.min(matrix.length, 15); r++) {
+                    const row = matrix[r];
+                    if (Array.isArray(row) && row.length >= 3) {
+                        const nonNumCount = row.filter(c => typeof c === 'string' && c.trim().length > 0).length;
+                        if (nonNumCount >= 2) {
+                            headerIdx = r;
+                            detectedYears = ['FY21', 'FY22', 'FY23', 'FY24', 'FY25'].slice(0, Math.max(2, row.length - 1));
+                            yearColIndices = detectedYears.map((_, i) => i + 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (headerIdx === -1 || detectedYears.length === 0) {
+                headerIdx = 0;
+                detectedYears = ['FY21', 'FY22', 'FY23', 'FY24'];
+                yearColIndices = [1, 2, 3, 4];
+            }
+
+            document.getElementById('diagHeaderIndex').textContent = `Row #${headerIdx + 1}`;
+            document.getElementById('diagYears').textContent = detectedYears.join(', ');
+            logDiag(`Header detected at Row #${headerIdx + 1}. Years: [${detectedYears.join(', ')}]`);
+
+            state.extractedYears = detectedYears;
+
+            // Map Rows to Canonical Financial Keys using Fuzzy Logic
+            const canonicalMap = {};
+            CANONICAL_KEYS.forEach(k => {
+                canonicalMap[k.id] = new Array(detectedYears.length).fill(0);
+            });
+
+            for (let r = headerIdx + 1; r < matrix.length; r++) {
+                const row = matrix[r];
+                if (!Array.isArray(row) || row.length === 0) continue;
+
+                const rowLabel = String(row[0] || row[1] || '').trim().toLowerCase();
+                if (!rowLabel) continue;
+
+                // Match with Canonical Keys
+                CANONICAL_KEYS.forEach(k => {
+                    const isMatched = k.aliases.some(alias => rowLabel.includes(alias));
+                    if (isMatched) {
+                        yearColIndices.forEach((colIdx, yIdx) => {
+                            const val = parseNumericValue(row[colIdx]);
+                            if (val !== 0 || canonicalMap[k.id][yIdx] === 0) {
+                                canonicalMap[k.id][yIdx] = val;
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Derive Gross Profit / EBITDA / PAT if missing from standard math
+            deriveCalculatedMetrics(canonicalMap);
+
+            state.canonicalData = canonicalMap;
+            state.selectedPeriod = 'All';
+
+            renderSlicers();
+            renderDashboard();
+        }
+
+        // Clean Numeric Values
+        function parseNumericValue(val) {
+            if (val === undefined || val === null || val === '') return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+
+            let str = String(val).trim();
+            // Handle negative values in brackets e.g. (12,000)
+            let isNegative = false;
+            if (str.startsWith('(') && str.endsWith(')')) {
+                isNegative = true;
+                str = str.slice(1, -1);
+            }
+            str = str.replace(/[\$,\s]/g, '');
+            const parsed = parseFloat(str);
+            if (isNaN(parsed)) return 0;
+            return isNegative ? -Math.abs(parsed) : parsed;
+        }
+
+        // Derive Calculated Metrics if missing
+        function deriveCalculatedMetrics(map) {
+            const len = state.extractedYears.length;
+            for (let i = 0; i < len; i++) {
+                // Gross Profit = Revenue - COGS
+                if (map['gross_profit'][i] === 0 && map['revenue'][i] > 0) {
+                    map['gross_profit'][i] = map['revenue'][i] - map['cogs'][i];
+                }
+                // EBITDA = Gross Profit - OpEx
+                if (map['ebitda'][i] === 0 && map['gross_profit'][i] !== 0) {
+                    map['ebitda'][i] = map['gross_profit'][i] - map['opex'][i];
+                }
+                // PAT = PBT - Tax
+                if (map['pat'][i] === 0 && map['pbt'][i] !== 0) {
+                    map['pat'][i] = map['pbt'][i] - map['tax'][i];
+                }
+            }
+        }
+
+        // CSV Fallback Parser
+        function parseCSVFallback(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split(/\r\n|\n/);
+                const matrix = lines.map(line => line.split(','));
+                state.rawMatrix = matrix;
+                parseFinancialMatrix(matrix);
+                showStatus('CSV Processed', 'CSV File parsed using fallback engine.', 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // Load Built-in Sample Data
+        function loadSampleData() {
+            state.fileName = 'Sample Financial Model';
+            state.extractedYears = [...SAMPLE_FINANCIAL_DATA.years];
+            state.canonicalData = JSON.parse(JSON.stringify(SAMPLE_FINANCIAL_DATA.canonical));
+            state.selectedPeriod = 'All';
+
+            document.getElementById('diagFileName').textContent = 'Sample Dataset';
+            document.getElementById('diagHeaderIndex').textContent = 'Row #1 (Mock)';
+            document.getElementById('diagYears').textContent = state.extractedYears.join(', ');
+            document.getElementById('activeFileTag').classList.remove('hidden');
+            document.getElementById('activeFileTag').textContent = 'Sample Model';
+
+            logDiag('Sample dataset loaded successfully.');
+            renderSlicers();
+            renderDashboard();
+            showStatus('Sample Data Loaded', 'Core Investo default multi-year financial model rendered.', 'info');
+        }
+
+        // Period Slicers Component
+        function renderSlicers() {
+            const slicerContainer = document.getElementById('periodSlicer');
+            slicerContainer.innerHTML = '';
+
+            const options = ['All', ...state.extractedYears];
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                const isActive = state.selectedPeriod === opt;
+                btn.className = `px-3 py-1 rounded-lg text-xs font-medium transition ${
+                    isActive
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                }`;
+                btn.textContent = opt;
+                btn.onclick = () => {
+                    state.selectedPeriod = opt;
+                    renderSlicers();
+                    renderDashboard();
+                };
+                slicerContainer.appendChild(btn);
+            });
+        }
+
+        // Render Dashboard Metrics & Charts
+        function renderDashboard() {
+            const years = state.extractedYears;
+            const data = state.canonicalData;
+
+            // Determine active index filter
+            let activeIndices = years.map((_, idx) => idx);
+            if (state.selectedPeriod !== 'All') {
+                const singleIdx = years.indexOf(state.selectedPeriod);
+                if (singleIdx !== -1) activeIndices = [singleIdx];
+            }
+
+            const latestIdx = activeIndices[activeIndices.length - 1] ?? 0;
+            const prevIdx = activeIndices.length > 1 ? activeIndices[activeIndices.length - 2] : null;
+
+            // Compute Key Metrics
+            const rev = data.revenue[latestIdx] || 0;
+            const prevRev = prevIdx !== null ? data.revenue[prevIdx] : 0;
+            const revGrowth = prevRev > 0 ? (((rev - prevRev) / prevRev) * 100).toFixed(1) : null;
+
+            const gp = data.gross_profit[latestIdx] || 0;
+            const gpMargin = rev > 0 ? ((gp / rev) * 100).toFixed(1) : '0.0';
+
+            const ebitda = data.ebitda[latestIdx] || 0;
+            const ebitdaMargin = rev > 0 ? ((ebitda / rev) * 100).toFixed(1) : '0.0';
+
+            const pat = data.pat[latestIdx] || 0;
+            const patMargin = rev > 0 ? ((pat / rev) * 100).toFixed(1) : '0.0';
+
+            // Populate KPI Elements
+            document.getElementById('kpiRevenue').textContent = formatCurrency(rev);
+            document.getElementById('kpiRevenueGrowth').innerHTML = revGrowth !== null
+                ? `<span class="${revGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}"><i class="fa-solid fa-caret-${revGrowth >= 0 ? 'up' : 'down'}"></i> ${Math.abs(revGrowth)}% YoY</span>`
+                : `<span class="text-gray-400">Selected Period</span>`;
+
+            document.getElementById('kpiGrossProfit').textContent = formatCurrency(gp);
+            document.getElementById('kpiGrossMargin').textContent = `Gross Margin: ${gpMargin}%`;
+
+            document.getElementById('kpiEBITDA').textContent = formatCurrency(ebitda);
+            document.getElementById('kpiEbitdaMargin').textContent = `EBITDA Margin: ${ebitdaMargin}%`;
+
+            document.getElementById('kpiNetProfit').textContent = formatCurrency(pat);
+            document.getElementById('kpiNetMargin').textContent = `Net Margin: ${patMargin}%`;
+
+            // Render Table
+            renderTable(activeIndices);
+
+            // Render SVG Charts
+            renderTrendChart(activeIndices);
+            renderMarginChart(activeIndices);
+        }
+
+        // Render Canonical Income Statement Table
+        function renderTable(indices) {
+            const headerRow = document.getElementById('tableHeaderRow');
+            const tbody = document.getElementById('tableBody');
+
+            // Set Header Columns
+            headerRow.innerHTML = `<th class="py-3.5 px-4 min-w-[220px]">Financial Line Item</th>`;
+            indices.forEach(idx => {
+                const th = document.createElement('th');
+                th.className = 'py-3.5 px-4 text-right min-w-[110px]';
+                th.textContent = state.extractedYears[idx];
+                headerRow.appendChild(th);
+            });
+
+            tbody.innerHTML = '';
+
+            CANONICAL_KEYS.forEach(keyObj => {
+                const tr = document.createElement('tr');
+                const isHighlight = ['revenue', 'gross_profit', 'ebitda', 'pat'].includes(keyObj.id);
+                tr.className = `hover:bg-gray-800/40 transition ${isHighlight ? 'font-semibold bg-indigo-950/20 text-white' : 'text-gray-300'}`;
+
+                let labelTd = `<td class="py-3 px-4 flex items-center gap-2">
+                    ${isHighlight ? '<i class="fa-solid fa-chevron-right text-xs text-indigo-400"></i>' : ''}
+                    <span>${keyObj.label}</span>
+                </td>`;
+
+                let valuesTd = indices.map(idx => {
+                    const val = state.canonicalData[keyObj.id][idx] || 0;
+                    const formatted = formatCurrency(val);
+                    return `<td class="py-3 px-4 text-right ${val < 0 ? 'text-red-400' : ''}">${formatted}</td>`;
+                }).join('');
+
+                tr.innerHTML = labelTd + valuesTd;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Interactive SVG Bar Chart Engine
+        function renderTrendChart(indices) {
+            const container = document.getElementById('chartTrendContainer');
+            if (indices.length === 0) return;
+
+            const years = indices.map(i => state.extractedYears[i]);
+            const revVals = indices.map(i => state.canonicalData.revenue[i] || 0);
+            const patVals = indices.map(i => state.canonicalData.pat[i] || 0);
+
+            const maxVal = Math.max(...revVals, ...patVals, 100);
+
+            const svgWidth = 500;
+            const svgHeight = 220;
+            const padding = 40;
+
+            const barWidth = Math.max(12, Math.min(30, (svgWidth - padding * 2) / (years.length * 2.5)));
+
+            let barsHTML = '';
+            const step = (svgWidth - padding * 2) / years.length;
+
+            years.forEach((yr, i) => {
+                const xCenter = padding + step * i + step / 2;
+                
+                // Revenue Bar
+                const revH = (revVals[i] / maxVal) * (svgHeight - padding * 2);
+                const revX = xCenter - barWidth - 2;
+                const revY = svgHeight - padding - revH;
+
+                // PAT Bar
+                const patH = (patVals[i] / maxVal) * (svgHeight - padding * 2);
+                const patX = xCenter + 2;
+                const patY = svgHeight - padding - patH;
+
+                barsHTML += `
+                    <!-- Revenue Bar -->
+                    <rect x="${revX}" y="${revY}" width="${barWidth}" height="${revH}" rx="4" fill="url(#gradRev)" class="transition-all duration-300 hover:opacity-80"/>
+                    <!-- PAT Bar -->
+                    <rect x="${patX}" y="${patY}" width="${barWidth}" height="${patH}" rx="4" fill="url(#gradPat)" class="transition-all duration-300 hover:opacity-80"/>
+                    <!-- Year Label -->
+                    <text x="${xCenter}" y="${svgHeight - 12}" fill="#9ca3af" font-size="10" text-anchor="middle" font-family="sans-serif">${yr}</text>
+                `;
+            });
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#818cf8"/>
+                            <stop offset="100%" stop-color="#4f46e5"/>
+                        </linearGradient>
+                        <linearGradient id="gradPat" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#c084fc"/>
+                            <stop offset="100%" stop-color="#9333ea"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid Lines -->
+                    <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" stroke="#374151" stroke-width="1"/>
+                    <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" stroke="#1f2937" stroke-dasharray="4"/>
+                    ${barsHTML}
+                </svg>
+            `;
+        }
+
+        // Interactive SVG Line Chart Engine (Margin Analysis)
+        function renderMarginChart(indices) {
+            const container = document.getElementById('chartMarginContainer');
+            if (indices.length === 0) return;
+
+            const years = indices.map(i => state.extractedYears[i]);
+            const marginVals = indices.map(i => {
+                const r = state.canonicalData.revenue[i] || 0;
+                const p = state.canonicalData.pat[i] || 0;
+                return r > 0 ? (p / r) * 100 : 0;
+            });
+
+            const svgWidth = 500;
+            const svgHeight = 220;
+            const padding = 40;
+
+            const maxM = Math.max(...marginVals, 30);
+            const step = (svgWidth - padding * 2) / (years.length > 1 ? years.length - 1 : 1);
+
+            const points = marginVals.map((m, i) => {
+                const x = years.length === 1 ? svgWidth / 2 : padding + i * step;
+                const y = svgHeight - padding - (m / maxM) * (svgHeight - padding * 2);
+                return { x, y, m, yr: years[i] };
+            });
+
+            const pathD = points.reduce((acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, '');
+
+            let dotsHTML = points.map(p => `
+                <circle cx="${p.x}" cy="${p.y}" r="5" fill="#10b981" stroke="#064e3b" stroke-width="2"/>
+                <text x="${p.x}" y="${p.y - 10}" fill="#10b981" font-size="10" font-weight="bold" text-anchor="middle">${p.m.toFixed(1)}%</text>
+                <text x="${p.x}" y="${svgHeight - 12}" fill="#9ca3af" font-size="10" text-anchor="middle">${p.yr}</text>
+            `).join('');
+
+            container.innerHTML = `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full">
+                    <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" stroke="#374151" stroke-width="1"/>
+                    <path d="${pathD}" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+                    ${dotsHTML}
+                </svg>
+            `;
+        }
+
+        // Toggle Diagnostics Modal
+        function toggleDiagnosticsModal() {
+            const modal = document.getElementById('diagnosticsModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Currency Formatter
+        function formatCurrency(val) {
+            if (val === 0) return '$0';
+            const absVal = Math.abs(val);
+            let formatted = '';
+            if (absVal >= 1e9) {
+                formatted = '$' + (absVal / 1e9).toFixed(2) + 'B';
+            } else if (absVal >= 1e6) {
+                formatted = '$' + (absVal / 1e6).toFixed(2) + 'M';
+            } else if (absVal >= 1e3) {
+                formatted = '$' + (absVal / 1e3).toFixed(1) + 'K';
+            } else {
+                formatted = '$' + absVal.toFixed(0);
+            }
+            return val < 0 ? `(${formatted})` : formatted;
+        }
+    </script>
+</body>
+</html>
